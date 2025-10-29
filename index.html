@@ -141,9 +141,33 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
             position: sticky;
             top: 0;
             z-index: 5;
+        }
+
+        .gantt-header-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .gantt-header-link:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        .gantt-header-link.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
         }
 
         .gantt-time-header {
@@ -400,6 +424,15 @@
             'E': '鷹'
         };
 
+        // Google Docs URLs for each group
+        const groupDocsUrls = {
+            'A': '', // 蟻 - Add URL here
+            'B': 'https://docs.google.com/document/d/1M9oS2lsY82lA9VdNybfzqZ5d8Pc5eJx9ewwKBKzyrn4/edit?usp=drive_link', // 蜂
+            'C': 'https://docs.google.com/document/d/17UY4XlGsW6ls_mB6qDTzZ6ceovrn0Zu3O5drrZeGVy4/edit?usp=drive_link', // 鹿 - Add URL here
+            'D': '', // 育成 - Add URL here
+            'E': ''  // 鷹團 - Add URL here
+        };
+
         function getGroupSymbol(group) {
             return groupSymbols[group] || group;
         }
@@ -535,9 +568,17 @@
                     `;
                 }).join('');
 
+                const docsUrl = groupDocsUrls[group];
+                const linkHtml = docsUrl
+                    ? `<a href="${docsUrl}" target="_blank" class="gantt-header-link" title="查看${getGroupSymbol(group)}的完整流程">🔗</a>`
+                    : `<span class="gantt-header-link disabled" title="尚無連結">🔗</span>`;
+
                 return `
                     <div class="gantt-column">
-                        <div class="gantt-header">${getGroupSymbol(group)}</div>
+                        <div class="gantt-header">
+                            ${getGroupSymbol(group)}
+                            ${linkHtml}
+                        </div>
                         <div class="gantt-timeline">${items}</div>
                     </div>
                 `;
