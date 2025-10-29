@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>活動時間表 Timeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 20px;
+        }
+
+        header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .filters {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-group {
+            margin-bottom: 10px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .tab:hover {
+            background: #f0f0ff;
+            transform: translateY(-2px);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #764ba2;
+        }
+
+        .timeline {
+            position: relative;
+        }
+
+        .gantt-view {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .gantt-container {
+            display: flex;
+            min-width: max-content;
+        }
+
+        .gantt-time-column {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 10;
+            border-right: 3px solid #667eea;
+            padding-right: 15px;
+            min-width: 100px;
+        }
+
+        .gantt-groups-container {
+            display: flex;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .gantt-column {
+            min-width: 120px;
+            flex: 1;
+        }
+
+        .gantt-header {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            padding: 12px 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px 8px 0 0;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .gantt-time-header {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+            padding: 12px 8px;
+            background: #f0f0ff;
+            border-radius: 8px 8px 0 0;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gantt-timeline {
+            position: relative;
+        }
+
+        .gantt-time-slot {
+            height: 60px;
+            padding: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 14px;
+            background: #fafafa;
+        }
+
+        .gantt-item {
+            height: 60px;
+            padding: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.3;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .gantt-item.has-activity {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .gantt-item.has-activity:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+
+        .timeline-item {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            margin-left: 40px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -40px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -48px;
+            top: 20px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .timeline-time {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .time-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .timeline-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .timeline-content {
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .timeline-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .meta-tag {
+            background: #f0f0f0;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .meta-tag.person {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .meta-tag.locality {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .meta-tag.equipment {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .group-badge {
+            display: inline-block;
+            background: #764ba2;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            padding: 40px;
+        }
+
+        .no-data {
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            .timeline-item {
+                margin-left: 30px;
+                padding: 12px;
+            }
+
+            .timeline-item::before {
+                left: -30px;
+            }
+
+            .timeline-item::after {
+                left: -38px;
+                width: 14px;
+                height: 14px;
+            }
+
+            .timeline-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 活動時間表</h1>
+            <p>Sow Family Rundown</p>
+        </header>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>選擇分團:</label>
+                <div id="groupTabs" class="tabs">
+                    <button class="tab active" data-group="all">全部</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="timeline" class="timeline">
+            <div class="loading">載入中...</div>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vStF_hcirz1w0Bj4Hy-dMf1y3QHL8ZUqN15HxzR6UgW7f12eOaGxjkcVcELmNpGQapHMaR8Kel0oQ7k/pub?output=csv';
+
+        let timelineData = [];
+        let currentGroup = 'all';
+
+        // Group symbol mapping
+        const groupSymbols = {
+            'A': '蟻',
+            'B': '蜂',
+            'C': '鹿',
+            'D': '育',
+            'E': '鷹'
+        };
+
+        function getGroupSymbol(group) {
+            return groupSymbols[group] || group;
+        }
+
+        // Parse CSV data
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length >= headers.length && values[0]) { // Skip empty rows
+                    const item = {};
+                    headers.forEach((header, index) => {
+                        item[header.trim()] = values[index] ? values[index].trim() : '';
+                    });
+                    data.push(item);
+                }
+            }
+
+            return data;
+        }
+
+        // Parse CSV line handling quoted values
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+
+            return result;
+        }
+
+        // Format time
+        function formatTime(time) {
+            if (!time) return '';
+            // Handle both numeric (830) and string (8:30) formats
+            const timeStr = String(time);
+            if (timeStr.includes(':')) {
+                return timeStr;
+            }
+            // Convert 830 to 8:30
+            if (timeStr.length === 3) {
+                return `${timeStr[0]}:${timeStr.slice(1)}`;
+            }
+            if (timeStr.length === 4) {
+                return `${timeStr.slice(0, 2)}:${timeStr.slice(2)}`;
+            }
+            return timeStr;
+        }
+
+        // Render timeline
+        function renderTimeline() {
+            const timeline = document.getElementById('timeline');
+
+            if (currentGroup === 'all') {
+                renderGanttView(timeline);
+            } else {
+                renderDetailView(timeline);
+            }
+        }
+
+        // Render Gantt chart view for all groups
+        function renderGanttView(timeline) {
+            const groups = [...new Set(timelineData.map(item => item.group))].filter(g => g).sort();
+
+            if (groups.length === 0) {
+                timeline.innerHTML = '<div class="no-data">沒有資料 (No data available)</div>';
+                return;
+            }
+
+            // Get all unique time slots
+            const timeSlots = [...new Set(timelineData.map(item => {
+                const begin = formatTime(item.begin);
+                const end = formatTime(item.end);
+                return `${begin}-${end}`;
+            }))].sort();
+
+            // Create a map of activities by group and time slot
+            const activityMap = {};
+            groups.forEach(group => {
+                activityMap[group] = {};
+                timeSlots.forEach(slot => {
+                    activityMap[group][slot] = null;
+                });
+            });
+
+            // Fill the activity map
+            timelineData.forEach(item => {
+                const begin = formatTime(item.begin);
+                const end = formatTime(item.end);
+                const slot = `${begin}-${end}`;
+                if (activityMap[item.group] && activityMap[item.group][slot] !== undefined) {
+                    activityMap[item.group][slot] = item.title || '未命名活動';
+                }
+            });
+
+            // Generate time column
+            const timeColumn = `
+                <div class="gantt-time-column">
+                    <div class="gantt-time-header">時間</div>
+                    <div class="gantt-timeline">
+                        ${timeSlots.map(slot => `
+                            <div class="gantt-time-slot">${slot}</div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Generate group columns
+            const groupColumns = groups.map(group => {
+                const items = timeSlots.map(slot => {
+                    const activity = activityMap[group][slot];
+                    const hasActivity = activity !== null;
+                    return `
+                        <div class="gantt-item ${hasActivity ? 'has-activity' : ''}">
+                            ${hasActivity ? activity : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="gantt-column">
+                        <div class="gantt-header">${getGroupSymbol(group)}</div>
+                        <div class="gantt-timeline">${items}</div>
+                    </div>
+                `;
+            }).join('');
+
+            timeline.innerHTML = `
+                <div class="gantt-view">
+                    <div class="gantt-container">
+                        ${timeColumn}
+                        <div class="gantt-groups-container">
+                            ${groupColumns}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render detailed view for single group
+        function renderDetailView(timeline) {
+            const filteredData = timelineData.filter(item => item.group === currentGroup);
+
+            if (filteredData.length === 0) {
+                timeline.innerHTML = '<div class="no-data">沒有資料 (No data available)</div>';
+                return;
+            }
+
+            timeline.innerHTML = filteredData.map(item => {
+                const beginTime = formatTime(item.begin);
+                const endTime = formatTime(item.end);
+                const timeRange = `${beginTime} - ${endTime}`;
+                const duration = item.duration ? `${item.duration}分鐘` : '';
+
+                let metaTags = '';
+                if (item.person) {
+                    metaTags += `<span class="meta-tag person">👤 ${item.person}</span>`;
+                }
+                if (item.locality) {
+                    metaTags += `<span class="meta-tag locality">📍 ${item.locality}</span>`;
+                }
+                if (item.equipment) {
+                    metaTags += `<span class="meta-tag equipment">🔧 ${item.equipment}</span>`;
+                }
+
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-time">
+                            <span>${timeRange}</span>
+                            ${duration ? `<span class="time-badge">${duration}</span>` : ''}
+                            ${item.group ? `<span class="group-badge">${getGroupSymbol(item.group)}</span>` : ''}
+                        </div>
+                        <div class="timeline-title">${item.title || '未命名活動'}</div>
+                        ${item.content ? `<div class="timeline-content">${item.content}</div>` : ''}
+                        ${metaTags ? `<div class="timeline-meta">${metaTags}</div>` : ''}
+                        ${item.memo ? `<div class="timeline-content" style="font-style: italic; color: #999;">📝 ${item.memo}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Load data
+        async function loadData() {
+            try {
+                const response = await fetch(CSV_URL);
+                const text = await response.text();
+                timelineData = parseCSV(text);
+
+                // Get unique groups and create tabs
+                const groups = [...new Set(timelineData.map(item => item.group))].filter(g => g);
+                const groupTabs = document.getElementById('groupTabs');
+                groups.forEach(group => {
+                    const button = document.createElement('button');
+                    button.className = 'tab';
+                    button.dataset.group = group;
+                    button.textContent = getGroupSymbol(group);
+                    button.addEventListener('click', () => {
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        button.classList.add('active');
+                        currentGroup = group;
+                        renderTimeline();
+                    });
+                    groupTabs.appendChild(button);
+                });
+
+                renderTimeline();
+            } catch (error) {
+                document.getElementById('timeline').innerHTML =
+                    '<div class="no-data">載入失敗 (Failed to load data)<br>' + error.message + '</div>';
+            }
+        }
+
+        // Add click event for "All" tab
+        document.querySelector('[data-group="all"]').addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-group="all"]').classList.add('active');
+            currentGroup = 'all';
+            renderTimeline();
+        });
+
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+</html>
