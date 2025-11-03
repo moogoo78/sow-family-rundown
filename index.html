@@ -76,7 +76,6 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            flex: 1;
             min-width: 80px;
         }
 
@@ -646,7 +645,7 @@
                 timelineData = parseCSV(text);
 
                 // Get unique groups and create tabs
-                const groups = [...new Set(timelineData.map(item => item.group))].filter(g => g);
+                const groups = [...new Set(timelineData.map(item => item.group))].filter(g => g).sort();
                 const groupTabs = document.getElementById('groupTabs');
                 groups.forEach(group => {
                     const button = document.createElement('button');
