@@ -508,6 +508,13 @@
             }
         }
 
+        // Helper function to convert time string to minutes for sorting
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
         // Render Gantt chart view for all groups
         function renderGanttView(timeline) {
             const groups = [...new Set(timelineData.map(item => item.group))].filter(g => g).sort();
@@ -517,12 +524,16 @@
                 return;
             }
 
-            // Get all unique time slots
+            // Get all unique time slots and sort them chronologically
             const timeSlots = [...new Set(timelineData.map(item => {
                 const begin = formatTime(item.begin);
                 const end = formatTime(item.end);
                 return `${begin}-${end}`;
-            }))].sort();
+            }))].sort((a, b) => {
+                const beginA = a.split('-')[0];
+                const beginB = b.split('-')[0];
+                return timeToMinutes(beginA) - timeToMinutes(beginB);
+            });
 
             // Create a map of activities by group and time slot
             const activityMap = {};
@@ -597,7 +608,13 @@
 
         // Render detailed view for single group
         function renderDetailView(timeline) {
-            const filteredData = timelineData.filter(item => item.group === currentGroup);
+            const filteredData = timelineData
+                .filter(item => item.group === currentGroup)
+                .sort((a, b) => {
+                    const beginA = formatTime(a.begin);
+                    const beginB = formatTime(b.begin);
+                    return timeToMinutes(beginA) - timeToMinutes(beginB);
+                });
 
             if (filteredData.length === 0) {
                 timeline.innerHTML = '<div class="no-data">沒有資料 (No data available)</div>';
